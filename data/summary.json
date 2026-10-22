@@ -1,0 +1,85 @@
+{
+ "n": 86,
+ "dates": [
+  "2026-10-21"
+ ],
+ "tol": 5.0,
+ "printed_out": 71,
+ "dated_out": 61,
+ "mine_out": 61,
+ "floor_median": 68.4,
+ "bond_n": 8,
+ "bond_dated_median": 101.6,
+ "bond_mine_median": 19.4,
+ "ret_n": 0,
+ "skipped": [
+  {
+   "tk": "AECV",
+   "name": "Australian Shares Catholic Values ETF",
+   "why": "its NAV history download returned a server error"
+  },
+  {
+   "tk": "GECV",
+   "name": "Global Shares Catholic Values ETF",
+   "why": "its NAV history download returned a server error"
+  },
+  {
+   "tk": "HETH",
+   "name": "Betashares Global Sustainability Leaders Currency Hedged ETF",
+   "why": "its file gives weights only, no values"
+  },
+  {
+   "tk": "HGBL",
+   "name": "Betashares Global Shares Currency Hedged ETF",
+   "why": "its file gives weights only, no values"
+  },
+  {
+   "tk": "HNDQ",
+   "name": "Betashares NASDAQ 100 Currency Hedged ETF",
+   "why": "its file gives weights only, no values"
+  },
+  {
+   "tk": "HQLT",
+   "name": "Betashares Global Quality Leaders Currency Hedged ETF",
+   "why": "its file gives weights only, no values"
+  },
+  {
+   "tk": "HQUS",
+   "name": "Betashares S&P 500 Equal Weight Currency Hedged ETF",
+   "why": "its file gives weights only, no values"
+  },
+  {
+   "tk": "WBND",
+   "name": "Betashares Global Aggregate Bond Currency Hedged ETF",
+   "why": "its file gives weights only, no values"
+  },
+  {
+   "tk": "WRLD",
+   "name": "Betashares Managed Risk Global Share Fund (managed Fund)",
+   "why": "its file gives weights only, no values"
+  },
+  {
+   "tk": "CRYP",
+   "name": "Betashares Crypto Innovators ETF",
+   "why": "no NAV for 2026-10-21 in the history it served"
+  }
+ ],
+ "intl_by_date": [
+  {
+   "d": "2026-10-16",
+   "n": 24,
+   "median": 28.3,
+   "lo": 9.5,
+   "hi": 36.3,
+   "same_side": 24
+  },
+  {
+   "d": "2026-10-21",
+   "n": 23,
+   "median": -5.8,
+   "lo": -23.3,
+   "hi": 5.5,
+   "same_side": 19
+  }
+ ]
+}

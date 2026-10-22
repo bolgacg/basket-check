@@ -1,0 +1,5 @@
+data/raw/
+__pycache__/
+data/shots/
+data/check.json
+data/*.log

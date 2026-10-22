@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Does each fund's holdings file add up to its NAV?</title>
+<meta name="description" content="One day of public holdings files from every BetaShares fund, each summed and checked against the NAV the issuer published: which files add up, which do not, and why. Bolgac Gulen, 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--paper:#faf9f7;--ink:#1a1d21;--soft:#5b6470;--faint:#8b95a1;--rule:#e2e0dc;--rule2:#c9c5be;--panel:#f3f1ed;--card:#fff;
+  --pos:#2f7d54;--neg:#b03a3a;--accent:#2c4a6b;--amber:#c8860d;--mine:#2a78d6;--look:#d9622b;--floor:#9aa3ad;
+  --serif:'Newsreader',Georgia,serif;--sans:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;background:var(--paper)}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-bottom:110px}
+a{color:var(--accent);text-decoration:none;font-weight:500}a:hover{text-decoration:underline}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px}
+header{padding:36px 0 22px;border-bottom:1px solid var(--ink)}
+#bluf{padding-top:24px}
+h2.bluf-h{font-size:clamp(22px,2.6vw,26px);text-wrap:wrap}
+.cap{font-size:13.5px;color:var(--soft);line-height:1.5;margin:10px 0 0;max-width:820px}.cap b{color:var(--ink)}
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.16em;color:var(--faint);text-transform:uppercase}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,4.4vw,44px);line-height:1.08;letter-spacing:-.01em;margin:12px 0 14px;max-width:840px;text-wrap:balance}
+.dek{max-width:800px;color:var(--soft);font-size:17.5px;font-family:var(--serif);line-height:1.5}
+.dek strong{color:var(--ink);font-weight:600}
+.byline{margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--faint);display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+section{padding:44px 0 6px}
+.sec-label{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+h2{font-family:var(--serif);font-weight:600;font-size:29px;line-height:1.2;margin-bottom:10px;text-wrap:balance}
+h3{font-family:var(--serif);font-size:20px;font-weight:600;margin:26px 0 8px}
+p{margin-bottom:12px}
+.lede{color:var(--soft);max-width:770px;margin-bottom:18px}
+.lede strong,.lede em,.lede b{color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:20px 22px;margin-top:16px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:12px;padding:7px 12px;border:1px solid var(--rule2);border-radius:3px;background:var(--card);color:var(--soft);cursor:pointer}
+.chip:hover{color:var(--ink);border-color:var(--soft)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:500}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:6px}
+.ctl .lab{font-size:13px;color:var(--ink);font-weight:500}
+.viz{position:relative;margin-top:10px;touch-action:pan-y}.viz svg{width:100%;height:auto;display:block}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font:12px/1.45 var(--mono);padding:6px 9px;border-radius:4px;display:none;white-space:nowrap;z-index:5}
+.verdict{margin-top:18px;padding:2px 0 2px 16px;border-left:3px solid var(--accent);font-size:15px;max-width:770px}
+.verdict.sting{border-left-color:var(--neg)}.verdict b{color:var(--accent)}.verdict.sting b{color:var(--neg)}
+.handover{font-size:14.5px;color:var(--soft);max-width:770px;margin-top:14px;font-style:italic;font-family:var(--serif)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:right;padding:0 0 8px;border-bottom:1px solid var(--rule);vertical-align:bottom}
+th:first-child,th.l{text-align:left}
+td{padding:8px 0;border-bottom:1px solid var(--rule);text-align:right;font-variant-numeric:tabular-nums;vertical-align:top}
+td:first-child,td.l{text-align:left}th+th,td+td{padding-left:14px}td.num{white-space:nowrap;font-family:var(--mono);font-size:13px}
+tr:last-child td{border-bottom:none}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.note{font-size:12.5px;color:var(--faint);margin-top:10px;line-height:1.5;max-width:770px}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.hint{font-size:12.5px;color:var(--faint);line-height:1.45;margin-top:6px}
+code,.code{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
+.quote{font-family:var(--serif);font-size:18px;color:var(--ink);border-left:3px solid var(--amber);padding:2px 0 2px 16px;margin:12px 0;max-width:770px}
+.quote small{display:block;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:6px}
+.limits{margin-top:18px;border-left:3px solid var(--neg);padding:2px 0 2px 16px;max-width:790px}
+.limits p{font-size:14.5px;color:var(--soft)}.limits p b{color:var(--ink)}
+.small{font-size:14px;color:var(--soft)}
+.small b{color:var(--ink)}
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px 24px;font-size:13.5px;color:var(--soft);margin-top:10px}
+.gloss b{display:block;color:var(--ink);font-family:var(--mono);font-size:12px;font-weight:500}
+footer{border-top:1px solid var(--rule);margin-top:44px;padding:20px 0 30px;font-family:var(--mono);font-size:12px;color:var(--faint)}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#tour{position:absolute;top:0;left:0;right:0;z-index:50;display:none;pointer-events:none}
+#tour.on{display:block}
+.tour-hl{position:absolute;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 9999px rgba(26,29,33,.55);transition:all .35s ease;pointer-events:none}
+.tour-card{position:absolute;width:min(400px,calc(100vw - 32px));background:var(--card);border:1px solid var(--rule2);border-radius:8px;padding:18px 20px;box-shadow:0 6px 30px rgba(0,0,0,.18);pointer-events:auto}
+.tour-card .tk{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.tour-card p{font-size:14px;line-height:1.55;color:var(--ink);margin:0 0 12px}
+.tour-nav{display:flex;align-items:center;gap:8px}
+.tour-nav .dots{flex:1;display:flex;gap:5px;flex-wrap:wrap}
+.tour-nav .dots i{width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.tour-nav .dots i.on{background:var(--accent)}
+.tour-btn{font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:4px;border:1px solid var(--rule2);background:var(--card);color:var(--soft);cursor:pointer}
+.tour-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.tour-open{font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:4px;border:1px solid var(--accent);background:var(--card);color:var(--accent);cursor:pointer}
+.tour-open:hover{background:var(--accent);color:#fff}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;background:var(--panel);border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin-top:14px}
+.stat>div{padding:12px 14px;border-left:1px solid var(--rule)}.stat>div:first-child{border-left:none}
+.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.stat .k i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.stat .n{font-family:var(--mono);font-size:20px;font-weight:500}.stat .s{font-size:12px;color:var(--soft);margin-top:3px}
+@media (max-width:520px){.stat>div{border-left:none;border-top:1px solid var(--rule)}.stat>div:first-child{border-top:none}}
+@media (max-width:520px){.stat.four{grid-template-columns:1fr 1fr}.stat.four>div:nth-child(2){border-top:none;border-left:1px solid var(--rule)}.stat.four>div:nth-child(4){border-left:1px solid var(--rule)}}
+.howto{font-size:13px;color:var(--soft);margin:8px 0 0;line-height:1.5}
+.howto b{color:var(--ink);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+.card-title{font-family:var(--serif);font-size:20px;font-weight:600;margin-bottom:6px}
+.pill{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--rule2);border-radius:3px;padding:3px 7px;color:var(--soft);white-space:nowrap;margin:0 6px 4px 0;vertical-align:middle}
+.pill.bad{color:var(--neg);border-color:var(--neg)}
+.pill.ok{color:var(--pos);border-color:var(--pos)}
+.pill.mid{color:var(--amber);border-color:var(--amber)}
+.why{font-size:14.5px;color:var(--ink);background:var(--panel);border-radius:4px;padding:10px 14px;margin:0 0 12px;max-width:790px}
+.why b{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-right:6px}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin:20px 0 4px;max-width:880px}
+.qgrid div{border-top:1px solid var(--rule);padding-top:8px;font-size:15px;line-height:1.5;color:var(--soft)}
+.qgrid b{display:block;font-family:var(--serif);font-size:17px;color:var(--ink);font-weight:600;margin-bottom:2px}
+.qgrid .num{color:var(--ink);font-weight:500}
+@media (max-width:640px){.qgrid{grid-template-columns:1fr}}
+.slider{width:100%;max-width:420px;accent-color:var(--accent)}
+.rowsel{cursor:pointer}
+.rowsel:hover td{background:var(--panel)}
+tr.on td{background:#eef2f7}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px 18px;margin:12px 0}
+.facts div{border-top:1px solid var(--rule);padding-top:6px}
+.facts .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.facts .v{font-family:var(--mono);font-size:17px}
+.daytext p{font-size:14.5px;color:var(--ink);max-width:770px}
+.daytext p.s{color:var(--soft)}
+.lines td,.lines th{font-size:13px}
+ol.primer{padding-left:20px;font-size:14.5px;color:var(--soft);line-height:1.7}
+ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
+.disclose{font-size:13px;color:var(--soft);margin-top:16px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div id="tour"><div class="tour-hl"></div><div class="tour-card"></div></div>
+
+<header><div class="wrap">
+  <div class="eyebrow">A one day check on public ETF files &middot; October 2026</div>
+  <h1>Does each fund's holdings file add up to its NAV?</h1>
+  <p class="dek" id="dek"></p>
+  <div class="byline">
+    <span>Bolga&ccedil; G&uuml;len</span>
+    <span>Public issuer files only, nothing about Optiver's systems</span>
+    <a href="https://github.com/bolgacg/basket-check">github.com/bolgacg/basket-check</a>
+    <button class="tour-open" id="tourbtn">Walk me through it</button>
+  </div>
+</div></header>
+
+<section id="bluf"><div class="wrap">
+  <div class="sec-label">The answer, before anything else</div>
+  <h2 class="bluf-h" id="bluf-h"></h2>
+  <div class="card" id="bluecard">
+    <div class="viz" id="blufviz"><div class="tip" id="bluftip"></div></div>
+    <p class="cap"><b>What you see.</b> Every fund's holdings file for one day, summed and set against
+    the fund's value as the issuer published it, three ways, one strip each. <b>How to read it.</b>
+    One mark is one fund, grouped by kind along the bottom. Its height is the gap in basis points,
+    hundredths of a percent: above the line means the file adds up to more than the fund. A mark
+    outside the shaded band is a break. The dashed lines are the floor: what a check pinned one
+    trading day early would miss on a typical fund, which is what a wrong date costs.</p>
+    <div class="ctl" role="group" aria-label="Tolerance" style="margin-top:12px">
+      <span class="lab">Tolerance</span>
+      <div class="chips" id="tolchips"></div>
+    </div>
+    <p class="hint" id="blufhint">Click any fund on the chart. The box under it says what its file shows.</p>
+    <div class="stat" id="blufstat"></div>
+    <div id="fundcard" style="margin-top:18px;border-top:1px solid var(--rule);padding-top:16px"></div>
+  </div>
+  <p class="verdict" id="v0"></p>
+  <div class="qgrid" id="qgrid"></div>
+</div></section>
+
+<section id="primer"><div class="wrap">
+  <div class="sec-label">Before going further</div>
+  <h2>Five things to know</h2>
+  <p class="lede">This page reads one day of fund files, so here is what is in them and what is being
+  checked. Nothing after this assumes you have seen an ETF file before.</p>
+  <div class="card">
+    <ol class="primer">
+      <li>An <b>ETF</b> is a fund whose units trade on the stock exchange. Once a day, after the close,
+        the issuer works out what one unit is worth: the fund's assets, minus what it owes, divided by
+        the units on issue. That figure is the <b>NAV</b>, net asset value.</li>
+      <li>Market makers quote the ETF all day from a <b>basket</b>: the holdings and cash that one
+        creation unit, a large block of new units, stands for. The file that lists it is the
+        <b>PCF</b>, portfolio composition file. Valued at live prices it gives the indicative NAV,
+        the running estimate of what a unit is worth.</li>
+      <li>Issuers also publish each fund's <b>full holdings</b>: one line per holding, with a quantity
+        and a market value in Australian dollars. BetaShares serves only the latest file for each
+        fund, and the full daily history of its NAV.</li>
+      <li>If the file is complete and dated like the NAV, its market values add up to the NAV times
+        the units on issue. Any gap is something the file does not say. It is counted in basis points:
+        one basis point is a hundredth of a percent, about one dollar in every ten thousand.</li>
+      <li>Three things break that identity: a <b>date</b> that differs between the file and the figure
+        it is checked against, a <b>line</b> printed on a different basis from the NAV, such as a bond
+        without the interest it has earned, and a holding that <b>moves the NAV</b> without carrying a
+        value in the file, such as a futures contract.</li>
+    </ol>
+  </div>
+
+  <div class="card" id="domain">
+    <div class="card-title">What happens to one fund's file</div>
+    <p class="small" id="domainhint">The whole check in one picture.</p>
+    <div class="viz" id="domainviz"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Terms, in the order they appear</div>
+    <div class="gloss">
+      <div><b>basis point (bp)</b> <span id="gloss-bp">A hundredth of a percent.</span></div>
+      <div><b>units on issue</b> How many units of the fund exist. It changes when market makers create
+        or redeem units in blocks. Each fund page gives the number with an as at date.</div>
+      <div><b>net assets</b> The fund's total value, NAV times units on issue, as printed on its page
+        with its own as at date.</div>
+      <div><b>coupon</b> The interest a bond pays, as a percentage of its face value a year, here in two
+        payments six months apart.</div>
+      <div><b>face value</b> The amount a bond repays at maturity, and the amount its coupon is
+        calculated on.</div>
+      <div><b>clean price and accrued interest</b> Bond prices are quoted clean, without the interest
+        earned since the last coupon. A fund owns that interest, so its NAV includes it.</div>
+      <div><b>floating rate note</b> A bond whose coupon resets every quarter. The files mark these with
+        Float in the code.</div>
+      <div><b>index futures</b> Contracts on a share index. Gains and losses settle in cash each day, so
+        the file lists the contract with a quantity and no value.</div>
+      <div><b>geared fund</b> A fund that borrows to hold more than its own value in shares. The loan
+        shows as negative cash.</div>
+      <div><b>fund of funds</b> A fund whose holdings are other ETFs.</div>
+      <div><b>hybrid</b> A security between a bond and a share, here bank and insurer issues listed on
+        the exchange.</div>
+      <div><b>options overlay</b> A share fund that also sells options on its holdings for income.</div>
+    </div>
+  </div>
+</div></section>
+
+<section id="words"><div class="wrap">
+  <div class="sec-label">Their words</div>
+  <h2>The job this page does in miniature</h2>
+  <p class="lede">The advertisement for the ETF Pricing Specialist in Sydney describes the work in three
+  lines. This page is built around the second one.</p>
+  <div id="quotes">
+    <div class="quote">Analysis and processing of ETF PCF and related data pipelines.</div>
+    <div class="quote">Day to day validations of ETF PCFs and related data products, handling edge
+      cases around corporate actions or data quality/availability.</div>
+    <div class="quote">Work closely with trading and development teams, building systems to improve
+      data quality and process automation.
+      <small>Optiver, ETF Pricing Specialist, Sydney, read 19 October 2026</small></div>
+  </div>
+  <p class="small">The baskets a desk receives each morning are not on this page. Each fund's full
+  holdings file is public, and everything below runs the first check a desk would run on a PCF, that
+  it adds up to the fund, on that file instead. Nothing on this page describes Optiver's systems or
+  data.</p>
+</div></section>
+
+<section id="act1"><div class="wrap">
+  <div class="sec-label">Act one</div>
+  <h2>One fund of each kind, opened up</h2>
+  <p class="why"><b>Why this matters</b> A desk covers many kinds of fund at once, and each kind breaks
+  the check in its own way. Seeing one of each first makes the full list readable.</p>
+  <p class="lede">Each button picks one real fund. The box shows what its file adds up to, what the
+  issuer published for the same fund, and which lines explain the difference.</p>
+  <div class="chips" id="kindchips" role="group" aria-label="Kind of fund"></div>
+  <p class="howto"><b>Click</b> a kind of fund. The first one is open already.</p>
+  <div class="card" id="kindcard"></div>
+  <p class="verdict" id="v1"></p>
+  <p class="handover">One fund of each kind is an anecdote. Act two is every fund, as a checklist.</p>
+</div></section>
+
+<section id="act2"><div class="wrap">
+  <div class="sec-label">Act two</div>
+  <h2>Every fund, as a checklist</h2>
+  <p class="why"><b>Why this matters</b> This is the daily validation from the advertisement, run on
+  every fund the issuer publishes a file for: the gap, its likely cause, and whether the file itself
+  explains it.</p>
+  <p class="lede" id="loglede"></p>
+  <div class="chips" id="logchips" role="group" aria-label="Filter by kind"></div>
+  <p class="howto"><b>Click</b> a kind to filter the list. <b>Click</b> a row to open that fund below
+  the table.</p>
+  <div class="card" id="logcard">
+    <div class="tscroll" style="max-height:460px;overflow-y:auto"><table id="logtable"><thead></thead><tbody></tbody></table></div>
+    <div id="logdetail" style="margin-top:16px"></div>
+  </div>
+  <p class="verdict" id="v2"></p>
+  <p class="handover">The largest correction on the list is the bond interest. Act three shows how it is
+  worked out from the file's own columns.</p>
+</div></section>
+
+<section id="act3"><div class="wrap">
+  <div class="sec-label">Act three</div>
+  <h2 id="act3-h">Bond files leave out the interest each bond has earned</h2>
+  <p class="why"><b>Why this matters</b> Bond funds are where the file and the NAV differ most, and the
+  difference can be calculated from the file itself, line by line, before anyone looks at the NAV.</p>
+  <div class="card" id="bondcard">
+    <div class="card-title">One bond line, worked through</div>
+    <div class="daytext" id="bondline"></div>
+  </div>
+  <h3>Every bond fund, before and after</h3>
+  <p class="small">Each row is a bond fund on the same day: the gap with the file as printed, and the
+  gap once every fixed rate line carries its earned interest. Floating rate lines are left as printed.</p>
+  <div class="tscroll"><table id="bondtable"><thead></thead><tbody></tbody></table></div>
+  <p class="verdict" id="v3"></p>
+  <p class="handover">Interest is a correction the file allows. Act four is about the gaps it does not.</p>
+</div></section>
+
+<section id="act4"><div class="wrap">
+  <div class="sec-label">Act four</div>
+  <h2>Where this check loses</h2>
+  <p class="why"><b>Why this matters</b> A check is only worth running if its blind spots are known.
+  These are the ones one day of files exposes, stated before anyone else finds them.</p>
+  <div class="limits" id="failpane">
+    <p id="f-intl"></p>
+    <p id="f-novalue"></p>
+    <p id="f-gap"></p>
+    <p id="f-oneday"></p>
+    <p id="f-dates"></p>
+  </div>
+  <p class="verdict sting" id="v4"></p>
+</div></section>
+
+<section id="coda"><div class="wrap">
+  <div class="sec-label">How it was built</div>
+  <h2>Method, choices and sources</h2>
+
+  <div class="card" id="selfcheckcard">
+    <div class="card-title">This page checking itself</div>
+    <p class="small">The headline could have been typed by hand. So the page ships each fund's sums,
+    recomputes every gap and the break counts in your browser now, and prints the result beside what
+    the build script wrote.</p>
+    <p class="small" id="selfcheck">Running.</p>
+  </div>
+
+  <h3>How the check works</h3>
+  <ol class="primer">
+    <li>Collect, for every fund listed on the issuer's fund pages, its latest holdings file, its NAV
+      history and the units on issue and net assets its page shows.</li>
+    <li>Add up the file's Market Value column. Lines with no value, such as futures, add nothing.</li>
+    <li><b>As printed</b>: set the sum against the net assets on the fund's page. <b>Dated</b>: set it
+      against the NAV on the file's own date, from the NAV history, times the units on issue.</li>
+    <li><b>Mine</b>: as dated, after adding to every fixed rate bond the interest it has earned since
+      its last coupon, from the file's own coupon, maturity and face value columns, assuming two
+      coupons a year counted back from maturity.</li>
+    <li>The published figures are read last, only to grade the sum.</li>
+  </ol>
+
+  <div class="card" id="choices">
+    <div class="card-title">What was chosen by hand, in one box</div>
+    <p class="small">Nothing on this page is trained. What was chosen are a few rules, and each one
+    changes a count above, so here they are with the reason for each.</p>
+    <div class="tscroll"><table><thead><tr><th>Choice</th><th>Value</th><th class="l">Why</th></tr></thead>
+      <tbody id="choicebody"></tbody></table></div>
+  </div>
+
+  <h3>Limits</h3>
+  <div class="limits">
+    <p>The issuer's own values are the only prices used. If a value in the file were wrong in the same
+      way as the NAV, the check would pass.</p>
+    <p>The coupon rule assumes every fixed rate bond pays twice a year on its maturity day and month.
+      After it, the bond funds still differ from their NAV by 10 to 40 bp, by amounts that change from
+      day to day; the file does not say why.</p>
+    <p>Fund families are assigned from what each file holds and from the fund's name. The likely
+      causes in the checklist are labelled as likely where the files cannot prove them.</p>
+  </div>
+
+  <h3>Sources and terms</h3>
+  <ul class="small" style="padding-left:18px;line-height:1.8">
+    <li>Holdings files, NAV histories, units on issue and net assets of every BetaShares fund that
+      publishes a holdings file, from <span class="code">www.betashares.com.au/fund/</span> and the
+      download links on each fund page, read 19 and 20 October 2026. <span id="srcdates"></span></li>
+    <li>Terms: Betashares' website terms say "You may use the information for your own personal
+      reference only" and "Except as permitted under the Copyright Act 1968 (Cth) or other applicable
+      laws, this website or any portion of this website may not otherwise be reproduced, adapted,
+      distributed, displayed, or transmitted to any other person or incorporated in any way into another
+      document or other material, without BHPL's express written consent." This page relies on what the
+      Copyright Act permits: fair dealing for research, and for criticism or review with the source
+      acknowledged. So the repository holds no Betashares file, the collector downloads the files to the
+      machine that runs it, and this page shows my calculations with only short factual excerpts, such as
+      a code, a date, a coupon or a quantity. Sources are cited in plain text.</li>
+    <li>This page is not affiliated with or endorsed by Betashares, ASX or Optiver.</li>
+    <li>Code, including the collector that grows the history day by day:
+      <a href="https://github.com/bolgacg/basket-check">github.com/bolgacg/basket-check</a>.</li>
+  </ul>
+  <p class="disclose">I built this with Claude as a coding assistant. The checks, the rules and the
+  conclusions are mine.</p>
+</div></section>
+
+<footer><div class="wrap">
+  <span>Bolga&ccedil; G&uuml;len &middot; every number on this page is generated by the build script from the issuer's public files, not typed</span>
+  <a href="https://github.com/bolgacg/basket-check">github.com/bolgacg/basket-check</a>
+</div></footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
