@@ -47,6 +47,13 @@
     'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
   function nw(n) { return n >= 0 && n < NUMW.length ? NUMW[n] : String(n); }
   function Nw(n) { var w = nw(n); return w.charAt(0).toUpperCase() + w.slice(1); }
+  // The standard median: the middle value, or the average of the two middle values for an even count.
+  function median(a) {
+    var v = a.filter(function (x) { return x != null; }).slice().sort(function (x, y) { return x - y; });
+    if (!v.length) return null;
+    var m = Math.floor(v.length / 2);
+    return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+  }
   // "none of the nine", "two of the nine": how many of a group, in words.
   function kOf(k, n) { return (k === 0 ? 'none' : nw(k)) + ' of the ' + nw(n); }
   function pill(t, cls) { return '<span class="pill ' + (cls || '') + '">' + esc(t) + '</span>'; }
@@ -80,7 +87,7 @@
     $('#bluf-h').textContent = 'Dating each file brings ' + closedByDate + ' more funds within ' + D.tol + ' bp; bond interest narrows the bond gaps but ' +
       (closedByInterest > 0 ? 'closes only ' + closedByInterest : 'closes none');
     var hedged = famOf('Currency hedged');
-    var hedgedMed = hedged.length ? hedged.map(function (f) { return Math.abs(f.mine); }).sort(function (a, b) { return a - b; })[Math.floor(hedged.length / 2)] : null;
+    var hedgedMed = median(hedged.map(function (f) { return Math.abs(f.mine); }));
     var q = $('#qgrid');
     q.innerHTML =
       '<div><b>How many files tie out as printed?</b><span class="num">' + (S.n - S.printed_out) + '</span> of ' + S.n +
@@ -226,19 +233,19 @@
     var ser = seriesBluf(), tol = state.tol;
     $('#blufstat').innerHTML = ser.map(function (x) {
       var c = x.vals.filter(function (v) { return v != null && Math.abs(v) > tol; }).length;
-      var med = x.vals.map(Math.abs).sort(function (a, b) { return a - b; })[Math.floor(x.vals.length / 2)];
+      var med = median(x.vals.map(Math.abs));
       return '<div><div class="k"><i style="background:' + x.colour + '"></i>' + esc(x.short) + '</div><div class="n">' + c +
         ' <span style="font-size:13px;color:#8b95a1">of ' + F.length + '</span></div><div class="s">funds outside ' +
         String.fromCharCode(177) + tol + ' bp; median gap ' + med.toFixed(1) + ' bp</div></div>';
     }).join('');
     $('#blufhint').innerHTML = 'Click any fund on the chart. The box under it says what its file shows. Marks beyond ' + String.fromCharCode(177) +
       '150 bp are cut and drawn as open circles.';
-    var medP = ser[0].vals.map(Math.abs).sort(function (a, b) { return a - b; })[Math.floor(F.length / 2)];
-    var medM = ser[2].vals.map(Math.abs).sort(function (a, b) { return a - b; })[Math.floor(F.length / 2)];
+    var medP = median(ser[0].vals.map(Math.abs));
+    var medM = median(ser[2].vals.map(Math.abs));
     var cnt = ser.map(function (x) { return x.vals.filter(function (v) { return v != null && Math.abs(v) > tol; }).length; });
     var byInt = cnt[1] - cnt[2];
     $('#v0').innerHTML = '<b>Dating each file closes ' + (cnt[0] - cnt[1]) + ' funds at this tolerance; adding bond interest closes ' + (byInt > 0 ? byInt : 'none') + ', though it narrows the bond gaps.</b> ' +
-      'Funds outside the band go from ' + cnt[0] + ' as printed to ' + cnt[1] + ' dated and ' + cnt[2] + ' with interest, while the median gap falls from ' + medP.toFixed(0) + ' bp to ' + medM.toFixed(0) + ' bp. ' +
+      'Funds outside the band go from ' + cnt[0] + ' as printed to ' + cnt[1] + ' dated and ' + cnt[2] + ' with interest, while the median gap falls from ' + medP.toFixed(1) + ' bp to ' + medM.toFixed(1) + ' bp. ' +
       'What stays outside is mostly structural: hedges the files leave out, futures whose daily margin has not reached the file’s cash, and a shared international gap.';
   }
   function tolChips() {
@@ -506,7 +513,7 @@
   /* ---------- act four: where it loses ---------- */
   function renderFail() {
     var hedged = famOf('Currency hedged');
-    var hm = hedged.map(function (f) { return Math.abs(f.mine); }).sort(function (a, b) { return a - b; })[Math.floor(hedged.length / 2)];
+    var hm = median(hedged.map(function (f) { return Math.abs(f.mine); }));
     $('#f-hedged').innerHTML = '<b>The currency hedged funds leave the hedge out.</b> ' + Nw(hedged.length) + ' funds hedge foreign currency back into Australian dollars with forward contracts that are not lines in the file. ' +
       'A forward is marked against the fund\u2019s exchange rate fix and rolled, typically monthly, so its value moves the NAV every day. These funds miss by a median of ' + hm.toFixed(0) + ' bp, and the file cannot size the hedge.';
     var pairs = S.futures_pairs || [];
@@ -569,7 +576,7 @@
   function choices() {
     var au = famOf('Australian shares').map(function (f) { return Math.abs(f.dated); }).sort(function (a, b) { return a - b; });
     var rows = [
-      ['Tolerance', D.tol + ' bp', 'Fees owed and income due, which a holdings file leaves out, usually come to a few basis points. It was set from that, and the Australian share funds then land within a median of ' + au[Math.floor(au.length / 2)].toFixed(1) + ' bp, so it is not independent of the result. The counts at 2, 10 and 25 bp are one click away under the first chart.'],
+      ['Tolerance', D.tol + ' bp', 'Fees owed and income due, which a holdings file leaves out, usually come to a few basis points. It was set from that, and the Australian share funds then land within a median of ' + median(au).toFixed(1) + ' bp, so it is not independent of the result. The counts at 2, 10 and 25 bp are one click away under the first chart.'],
       ['Coupon schedule', 'two a year, counted back from maturity, actual over actual', 'The usual convention for Australian dollar bonds. Act three shows the same funds under a settlement date and an ex interest variant.'],
       ['Floating rate lines', 'left as printed', 'Their printed values already sit close to the NAV, so they appear to include the interest earned.'],
       ['Fund kind', 'from the file’s lines and the fund’s name', 'Bond layout or share layout, futures without shares, more than half the value in other BetaShares funds, and the words geared, yield maximiser or covered call.'],
