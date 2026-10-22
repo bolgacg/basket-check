@@ -480,13 +480,14 @@
   /* ---------- act four: where it loses ---------- */
   function renderFail() {
     var ib = S.intl_by_date || [];
-    $('#f-intl').innerHTML = '<b>The international funds share a gap that moves.</b> ' + ib.map(function (x) {
-      return 'On ' + dLong(x.d) + ' the unhedged international share funds sat at a median of ' + sgn(x.median) + ' bp, ' + x.same_side + ' of ' + x.n + ' on the same side';
+    $('#f-intl').innerHTML = '<b>The international funds share a gap that moves.</b> ' + ib.map(function (x, i) {
+      return (i ? 'on ' : 'On ') + dLong(x.d) + ' the unhedged international share funds sat at a median of ' + sgn(x.median) + ' bp, ' + x.same_side + ' of ' + x.n + ' on the same side';
     }).join('; ') + '. A gap shared by assets with nothing in common but their conversion into Australian dollars, and that changes sign from one day to the next, points at the exchange rate, ' +
       'struck at a different moment for the file than for the NAV. That is the likely cause, and this page does not test it: the files carry no local prices, and the central bank\u2019s daily rates refuse automated download.';
     var nv = F.filter(function (f) { return ['Futures and cash', 'Geared', 'Options overlay', 'International bonds', 'Currency hedged'].indexOf(f.family) >= 0; });
     $('#f-novalue').innerHTML = '<b>Some funds move through lines without a value.</b> The currency hedged funds, the futures funds, the geared funds and the options overlay fund carry much of their daily change in hedges, futures or options the file prints without a value or does not list. ' +
-      nv.filter(function (f) { return Math.abs(f.mine) > D.tol; }).length + ' of these ' + nv.length + ' funds miss by more than ' + D.tol + ' bp, and their files cannot be checked against the NAV on their own.';
+      (function () { var k = nv.filter(function (f) { return Math.abs(f.mine) > D.tol; }).length; return (k === nv.length ? 'All ' + k + ' of these funds miss' : k + ' of these ' + nv.length + ' funds miss'); })() +
+      ' by more than ' + D.tol + ' bp, and their files cannot be checked against the NAV on their own.';
     var wo = S.skipped.filter(function (x) { return /weights/.test(x.why); });
     $('#f-gap').innerHTML = '<b>Some files cannot be added up at all.</b> ' + Nw(wo.length) + ' funds publish weights only, with no quantities or values (' +
       wo.map(function (x) { return x.tk; }).join(', ') + '), and ' + nw(S.skipped.length - wo.length) + ' more had no usable NAV history for the day (' +
@@ -496,7 +497,7 @@
       'So units created on the day cannot be told apart from a gap in the file, and yesterday\u2019s basket cannot yet be repriced at today\u2019s values. The collector in the repository saves each day\u2019s files; run daily, it builds that history.';
     var same = F.filter(function (f) { return f.units_as_at === f.d; }).length, later = F.filter(function (f) { return f.units_as_at && f.units_as_at > f.d; }).length;
     $('#f-dates').innerHTML = '<b>Dates differ from fund to fund.</b> On this day ' + same + ' fund pages give units on issue as at the file’s own date and ' + later +
-      ' give the next trading day. Where they differ, units created in between show up as a gap. A second day of files would show which convention each fund follows.';
+      ' give the next trading day. Where they differ, units created in between show up as a gap. A run of consecutive days would show which convention each fund follows.';
     $('#v4').innerHTML = '<b>Two days of files prove what dates and bond interest explain, and no more.</b> The international gap and the funds with unvalued lines need either a daily history of files or data the files do not carry. ' +
       'The collector is the cheaper of those two to get.';
   }
