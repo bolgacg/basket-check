@@ -8,9 +8,9 @@
  "dated_out": 61,
  "mine_out": 61,
  "floor_median": 68.4,
- "bond_n": 8,
- "bond_dated_median": 101.6,
- "bond_mine_median": 19.4,
+ "bond_n": 9,
+ "bond_dated_median": 105.9,
+ "bond_mine_median": 18.2,
  "ret_n": 0,
  "skipped": [
   {
@@ -81,5 +81,110 @@
    "hi": 5.5,
    "same_side": 19
   }
- ]
+ ],
+ "bond_variants": {
+  "dated": {
+   "median": 105.9,
+   "within": 0
+  },
+  "base": {
+   "median": 18.2,
+   "within": 0
+  },
+  "settle": {
+   "median": 20.4,
+   "within": 0
+  },
+  "ex": {
+   "median": 19.9,
+   "within": 2
+  }
+ },
+ "bond_worse": [
+  "BNDS",
+  "QPON"
+ ],
+ "futures_pairs": [
+  {
+   "contract": "XMZ6 Comdty",
+   "funds": [
+    {
+     "tk": "GGAB",
+     "qty": 133.0,
+     "gap": -29129,
+     "per": -219.0,
+     "mine": -58.02
+    },
+    {
+     "tk": "BBAB",
+     "qty": -38.0,
+     "gap": 9996,
+     "per": -263.1,
+     "mine": 66.0
+    }
+   ]
+  },
+  {
+   "contract": "UXYZ6 Comdty",
+   "funds": [
+    {
+     "tk": "BBFD",
+     "qty": -43.0,
+     "gap": -214297,
+     "per": 4983.7,
+     "mine": -872.95
+    },
+    {
+     "tk": "GGFD",
+     "qty": 59.0,
+     "gap": 296044,
+     "per": 5017.7,
+     "mine": 876.78
+    }
+   ]
+  },
+  {
+   "contract": "XPZ6 Index",
+   "funds": [
+    {
+     "tk": "BEAR",
+     "qty": -140.0,
+     "gap": 170051,
+     "per": -1214.7,
+     "mine": 53.2
+    },
+    {
+     "tk": "BBOZ",
+     "qty": -1554.0,
+     "gap": 1920817,
+     "per": -1236.0,
+     "mine": 120.98
+    }
+   ]
+  },
+  {
+   "contract": "ADZ6 Curncy",
+   "funds": [
+    {
+     "tk": "AUDS",
+     "qty": 520.0,
+     "gap": 1196961,
+     "per": 2301.8,
+     "mine": 534.92
+    },
+    {
+     "tk": "YANK",
+     "qty": -130.0,
+     "gap": -368378,
+     "per": 2833.7,
+     "mine": -638.13
+    }
+   ]
+  }
+ ],
+ "collected": [
+  "2026-10-19",
+  "2026-10-22"
+ ],
+ "publishing": 96
 }

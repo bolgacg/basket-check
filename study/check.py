@@ -64,9 +64,21 @@ def add_months(d, m):
     return dt.date(y, mo, min(d.day, calendar.monthrange(y, mo)[1]))
 
 
-def accrued(row, d, detail=False):
+def add_business_days(d, n):
+    while n:
+        d += dt.timedelta(days=1)
+        if d.weekday() < 5:
+            n -= 1
+    return d
+
+
+def accrued(row, d, detail=False, variant="base"):
     """Interest a fixed rate bond has earned since its last coupon, per the file's columns.
-    Australian dollar bonds pay twice a year, counting back from maturity."""
+    Australian dollar bonds pay twice a year, counting back from maturity, and accrue on actual
+    days over actual days in the coupon period. Variants: "settle" accrues to two business days
+    after the file date, the market's settlement date; "ex" adds nothing for a bond within seven
+    days of its coupon, the ex interest window, on the view that the coming coupon is then
+    already booked as cash."""
     c, f = num(row.get("Coupon (%)")), num(row.get("Notional/Face Value"))
     try:
         m = dt.date.fromisoformat(row.get("Maturity Date") or "")
@@ -78,7 +90,10 @@ def accrued(row, d, detail=False):
     while add_months(m, -6 * (k + 1)) > d:
         k += 1
     nxt, last = add_months(m, -6 * k), add_months(m, -6 * (k + 1))
-    a = f * c / 100 / 2 * (d - last).days / (nxt - last).days
+    to = add_business_days(d, 2) if variant == "settle" else d
+    a = f * c / 100 / 2 * (to - last).days / (nxt - last).days
+    if variant == "ex" and (nxt - d).days <= 7:
+        a = 0.0
     if detail:
         return {"tk": row["Ticker"], "name": row["Name"], "coupon": c, "maturity": m.isoformat(), "face": f,
                 "mv": num(row.get("Market Value (AUD)")), "last": last.isoformat(), "next": nxt.isoformat(),
@@ -115,8 +130,12 @@ def family(name, layout, kinds, rows):
     if layout == "bond":
         if "complex" in n:
             return "Other"
-        ccy = {r.get("Currency") for r in rows if kind(r, layout) in ("fixed", "floating")}
-        if "hedged" in n or (ccy and ccy != {"AUD"}):
+        val = {}
+        for r in rows:
+            if kind(r, layout) in ("fixed", "floating"):
+                val[r.get("Currency")] = val.get(r.get("Currency"), 0) + (num(r.get("Market Value (AUD)")) or 0)
+        foreign = sum(v for c, v in val.items() if c != "AUD") / (sum(val.values()) or 1)
+        if "hedged" in n or foreign > 0.5:
             return "International bonds"
         return "Floating rate bonds" if kinds.get("floating", 0) > kinds.get("fixed", 0) else "Fixed rate bonds"
     if kinds.get("futures") and not kinds.get("equities") and not kinds.get("equity preference"):
@@ -168,7 +187,11 @@ def main():
             for r in rows:
                 kinds[kind(r, layout)] = kinds.get(kind(r, layout), 0) + 1
             mv = sum(num(r.get("Market Value (AUD)")) or 0 for r in rows)
-            acc = sum(accrued(r, dt.date.fromisoformat(d)) or 0 for r in rows) if layout == "bond" else 0.0
+            dd = dt.date.fromisoformat(d)
+            acc = sum(accrued(r, dd) or 0 for r in rows) if layout == "bond" else 0.0
+            acc_settle = sum(accrued(r, dd, variant="settle") or 0 for r in rows) if layout == "bond" else 0.0
+            acc_ex = sum(accrued(r, dd, variant="ex") or 0 for r in rows) if layout == "bond" else 0.0
+            in_ex = sum(1 for r in rows if layout == "bond" and accrued(r, dd) and not accrued(r, dd, variant="ex"))
             blank = [r["Ticker"] for r in rows if num(r.get("Market Value (AUD)")) is None]
             # The page facts that go with this file: the first collection whose units are dated
             # on or after the file's date.
@@ -190,7 +213,13 @@ def main():
                 day["dated"] = (mv / na - 1) * 1e4
                 day["mine"] = ((mv + acc) / na - 1) * 1e4
                 day["accrued_bp"] = acc / na * 1e4
+                day["mine_settle"] = ((mv + acc_settle) / na - 1) * 1e4
+                day["mine_ex"] = ((mv + acc_ex) / na - 1) * 1e4
+                day["in_ex"] = in_ex
+                day["gap_dollars"] = mv + acc - na
             # Lines that carry no market value, and what the file says about them instead.
+            day["futures"] = [{"tk": r["Ticker"], "qty": num(r.get("Shares/Units (#)") or r.get("Notional/Face Value"))}
+                              for r in rows if kind(r, layout) == "futures"]
             day["no_value"] = [{"tk": r["Ticker"], "name": r["Name"], "kind": kind(r, layout),
                                 "qty": num(r.get("Shares/Units (#)") or r.get("Notional/Face Value"))} for r in rows
                                if num(r.get("Market Value (AUD)")) is None]
@@ -229,7 +258,9 @@ def main():
         for d in days:
             d.pop("rows")
         funds.append({"tk": tk, "name": days[-1]["name"], "family": fam, "url": pages[tk][-1]["url"], "days": days})
-    json.dump({"funds": funds, "weights_only": weights_only}, open(os.path.join(ROOT, "data", "check.json"), "w"), indent=1)
+    collected = sorted({f.get("fetched", "")[:10] for v in pages.values() for f in v if f.get("fetched")})
+    json.dump({"funds": funds, "weights_only": weights_only, "collected": collected},
+              open(os.path.join(ROOT, "data", "check.json"), "w"), indent=1)
     return funds
 
 

@@ -2,11 +2,13 @@
 
 Does each fund's holdings file add up to its NAV?
 
-An ETF pricing desk checks every day that each fund's basket adds up to the NAV the issuer
-publishes. I ran that check on one day of public holdings files from every BetaShares fund that
-publishes one: each file summed, and set against the fund's NAV on the file's own date times its
-units on issue. The gaps come from dates that do not line up, bonds printed without the interest
-they have earned, and holdings that move the NAV without carrying a value in the file.
+An end of day reconciliation of public ETF files: each BetaShares fund's published holdings report,
+summed, against the fund's NAV on the report's own date times its units on issue. It is one input to
+PCF work, not the PCF check itself, which also needs the next day's corporate actions, the cash
+component and the creation unit size; issuers do not publish those, and this project does not attempt
+them. The gaps come from dates that do not line up, bonds printed without the interest they have
+earned, hedges and futures margin the file does not carry, and a shared international gap for which
+the page offers only a hypothesis.
 
 Page: https://bolgacg.github.io/basket-check/
 
@@ -16,7 +18,10 @@ Page: https://bolgacg.github.io/basket-check/
 - **Dated.** The same sum against the NAV on the file's own date, from the fund's NAV history, times
   the units on issue.
 - **Mine.** As dated, after adding to every fixed rate bond the interest it has earned since its last
-  coupon, worked out from the file's own coupon, maturity and face value columns.
+  coupon, worked out from the file's own coupon, maturity and face value columns. Two variants, accrual
+  to settlement and no accrual inside the ex interest window, are reported beside it.
+- **Futures pairs.** Where two funds hold the same futures contract, their gaps per contract, to test
+  whether a gap is one day's margin not yet in the file's cash.
 - **Day over day.** Wherever two consecutive files exist, the earlier holdings valued at the later
   file's values, against the NAV move. The site serves only the latest file, so this needs the
   collector to have run on both days.
@@ -47,6 +52,7 @@ the source acknowledged. So this repository contains no Betashares file: `data/r
 version control, and `collect.py` downloads the files to the machine that runs it. The page shows my
 calculations, with only short factual excerpts such as a code, a date, a coupon or a quantity. This
 project is not affiliated with or endorsed by Betashares, ASX or Optiver, and nothing in it describes
-Optiver's systems.
+Optiver's systems. The collector fetches each file once per run, one request at a time with a pause
+between, and is meant to run once a day. If Betashares asks, I will take the page down.
 
 I built this with Claude as a coding assistant. The checks, the rules and the conclusions are mine.

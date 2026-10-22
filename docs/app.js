@@ -43,9 +43,12 @@
     return String(n).toLowerCase().replace(/\b([a-z])/g, function (c) { return c.toUpperCase(); })
       .replace(/\bCdi\b/g, 'CDI').replace(/\bBpce\b/g, 'BPCE').replace(/\bSa\b/g, 'SA').replace(/\bReit\b/g, 'REIT').replace(/\bPlc\b/g, 'plc').replace(/\bEvt\b/g, 'EVT').replace(/\bGqg\b/g, 'GQG');
   }
-  var NUMW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+  var NUMW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+    'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
   function nw(n) { return n >= 0 && n < NUMW.length ? NUMW[n] : String(n); }
   function Nw(n) { var w = nw(n); return w.charAt(0).toUpperCase() + w.slice(1); }
+  // "none of the nine", "two of the nine": how many of a group, in words.
+  function kOf(k, n) { return (k === 0 ? 'none' : nw(k)) + ' of the ' + nw(n); }
   function pill(t, cls) { return '<span class="pill ' + (cls || '') + '">' + esc(t) + '</span>'; }
 
 
@@ -64,25 +67,30 @@
 
   /* ---------- the header ---------- */
   function fillHeader() {
-    var au = famOf('Australian shares'), hedged = famOf('Currency hedged');
+    var au = famOf('Australian shares');
     var auIn = au.filter(function (f) { return Math.abs(f.dated) <= D.tol; }).length;
+    var closedByDate = S.printed_out - S.dated_out, closedByInterest = S.dated_out - S.mine_out;
+    var bv = S.bond_variants, nb = S.bond_n;
+    $('#dek').innerHTML = 'An end of day reconciliation of public ETF files: for ' + S.n + ' of the ' + S.publishing + ' BetaShares funds that publish a holdings report, ' +
+      'the report for ' + esc(dLong(fileDate())) + ', summed, against the fund\u2019s NAV times its units on issue. It is one input to PCF work, not the PCF check itself, ' +
+      'which also needs the next day\u2019s corporate actions, the cash component and the creation unit size. ' +
+      '<strong>Taking the NAV for each file\u2019s own date brings ' + closedByDate + ' more funds within ' + D.tol + ' bp, ' + (S.n - S.dated_out) + ' of ' + S.n + ' in all. ' +
+      'Adding the interest each fixed rate bond has earned narrows the typical bond fund\u2019s gap from ' + bv.dated.median.toFixed(0) + ' bp to ' + bv.base.median.toFixed(0) +
+      ' bp, but brings ' + kOf(bv.base.within, nb) + ' within ' + D.tol + ' bp and makes ' + nw(S.bond_worse.length) + ' funds worse.</strong>';
+    $('#bluf-h').textContent = 'Dating each file brings ' + closedByDate + ' more funds within ' + D.tol + ' bp; bond interest narrows the bond gaps but ' +
+      (closedByInterest > 0 ? 'closes only ' + closedByInterest : 'closes none');
+    var hedged = famOf('Currency hedged');
     var hedgedMed = hedged.length ? hedged.map(function (f) { return Math.abs(f.mine); }).sort(function (a, b) { return a - b; })[Math.floor(hedged.length / 2)] : null;
-    var ib = S.intl_by_date || [];
-    $('#dek').innerHTML = 'An ETF pricing desk checks every day that each fund\u2019s basket adds up to the NAV the issuer publishes. ' +
-      'I ran that check on one day of public holdings files, ' + esc(dLong(fileDate())) + ', from every BetaShares fund that publishes one. ' +
-      '<strong>Read as printed, most files miss. Dated properly, ' + auIn + ' of the ' + au.length + ' Australian share funds land within ' + D.tol +
-      ' bp, and the bond funds come most of the way once each bond carries the interest it has earned. ' +
-      'The currency hedged funds cannot be checked from their files, which leave the hedge out, and the international funds share a gap that moves from day to day.</strong>';
-    $('#bluf-h').textContent = 'Dates and bond interest close most gaps; hedged and international funds stay off';
     var q = $('#qgrid');
     q.innerHTML =
-      '<div><b>How many files add up as printed?</b><span class="num">' + (S.n - S.printed_out) + '</span> of ' + S.n +
-      ' funds land within ' + String.fromCharCode(177) + D.tol + ' bp of the net assets on their own page.</div>' +
-      '<div><b>How many add up once dated and read line by line?</b><span class="num">' + (S.n - S.mine_out) + '</span> of ' + S.n + '.</div>' +
-      '<div><b>What is the largest correction the files allow?</b>Bond interest: it moves the typical Australian fixed rate bond fund from <span class="num">' +
-      S.bond_dated_median.toFixed(0) + '</span> bp off to ' + S.bond_mine_median.toFixed(0) + ' bp off.</div>' +
-      '<div><b>What does it still get wrong?</b>The currency hedged funds, which miss by a median of <span class="num">' + (hedgedMed != null ? hedgedMed.toFixed(0) : '') +
-      '</span> bp because their files leave the hedge out' + (ib.length > 1 ? ', and an international gap that went from ' + sgn(ib[0].median, 0) + ' bp on ' + dShort(ib[0].d) + ' to ' + sgn(ib[ib.length - 1].median, 0) + ' bp on ' + dShort(ib[ib.length - 1].d) : '') + '.</div>';
+      '<div><b>How many files tie out as printed?</b><span class="num">' + (S.n - S.printed_out) + '</span> of ' + S.n +
+      ' within ' + String.fromCharCode(177) + D.tol + ' bp of the net assets on their own page.</div>' +
+      '<div><b>What does dating each file do?</b>It brings <span class="num">' + closedByDate + '</span> more within ' + D.tol + ' bp, ' + (S.n - S.dated_out) + ' of ' + S.n +
+      ', including ' + auIn + ' of the ' + au.length + ' Australian share funds.</div>' +
+      '<div><b>What does adding bond interest do?</b>It narrows the typical fixed rate bond fund from <span class="num">' + bv.dated.median.toFixed(0) + '</span> bp off to ' +
+      bv.base.median.toFixed(0) + ' bp off, brings ' + kOf(bv.base.within, nb) + ' within ' + D.tol + ' bp, and makes ' + S.bond_worse.join(' and ') + ' worse.</div>' +
+      '<div><b>What is left?</b>The ' + nw(hedged.length) + ' currency hedged funds, which miss by a median of <span class="num">' + (hedgedMed != null ? hedgedMed.toFixed(0) : '') +
+      '</span> bp and leave the hedge out; futures funds whose gaps match one day\u2019s move on their contracts; and an international gap I can only offer a hypothesis for.</div>';
     var g = $('#gloss-bp');
     var a200 = F[BY_TK.A200];
     if (g && a200) g.textContent = 'A hundredth of a percent. On a unit worth A$' + a200.nav.toFixed(2) + ', the largest fund\u2019s NAV that day, one basis point is ' +
@@ -227,9 +235,11 @@
       '150 bp are cut and drawn as open circles.';
     var medP = ser[0].vals.map(Math.abs).sort(function (a, b) { return a - b; })[Math.floor(F.length / 2)];
     var medM = ser[2].vals.map(Math.abs).sort(function (a, b) { return a - b; })[Math.floor(F.length / 2)];
-    $('#v0').innerHTML = '<b>Reading each file on its own date and adding bond interest cuts the median gap from ' + medP.toFixed(0) + ' bp to ' + medM.toFixed(0) + ' bp.</b> ' +
-      'Both corrections come from the files and the issuer’s own NAV history, with no outside data. ' +
-      'What stays outside are the currency hedged funds, whose files leave the hedge out, the funds that move through futures, loans or options, and an international gap that moves from day to day.';
+    var cnt = ser.map(function (x) { return x.vals.filter(function (v) { return v != null && Math.abs(v) > tol; }).length; });
+    var byInt = cnt[1] - cnt[2];
+    $('#v0').innerHTML = '<b>Dating each file closes ' + (cnt[0] - cnt[1]) + ' funds at this tolerance; adding bond interest closes ' + (byInt > 0 ? byInt : 'none') + ', though it narrows the bond gaps.</b> ' +
+      'Funds outside the band go from ' + cnt[0] + ' as printed to ' + cnt[1] + ' dated and ' + cnt[2] + ' with interest, while the median gap falls from ' + medP.toFixed(0) + ' bp to ' + medM.toFixed(0) + ' bp. ' +
+      'What stays outside is mostly structural: hedges the files leave out, futures whose daily margin has not reached the file’s cash, and a shared international gap.';
   }
   function tolChips() {
     var host = $('#tolchips');
@@ -275,10 +285,10 @@
       out.push('Its bonds are floating rate notes, marked Float in the file. Their printed values already sit within a few basis points of the NAV, so they appear to include the interest earned, and my rule leaves them alone.');
     }
     f.no_value.forEach(function (x) {
-      if (x.kind === 'futures') out.push('The file lists ' + x.tk.replace(/ Index$/, '') + ' with ' + int(x.qty) + ' contracts and no value. Futures gains and losses settle in cash each day, so this line moves the NAV through the cash line, and the file cannot show by how much on the day it is dated.');
+      if (x.kind === 'futures' && Math.abs(f.mine) > tol) out.push('The file lists ' + x.tk.replace(/ (Index|Comdty|Curncy)$/, '') + ' with ' + int(x.qty) + ' contracts and no value. Futures settle their gains and losses in cash every day, so the open contracts carry about zero value; a gap here is the timing of that day\u2019s cash against the close, which the file does not show. Act four tests this on the funds that share a contract.');
     });
     if (f.family === 'International shares') {
-      out.push('The international share funds move together from day to day: act four shows their shared gap on each day collected, and the likely reason.');
+      out.push('The international share funds sit on the same side of zero together: act four shows their shared gap on each day collected, and a hypothesis for it.');
     }
     if (f.family === 'Currency hedged') {
       out.push('This fund hedges its foreign currency back into Australian dollars. The hedge contracts are not lines in the file, so the file shows the holdings unhedged while the NAV includes the hedge\u2019s gain or loss. That is the likely cause of the gap, and the file cannot size it.');
@@ -291,7 +301,7 @@
     if (f.family === 'Funds of funds') out.push('Its holdings are other ETFs, valued at their own prices on the day; their dates and pricing carry into this file.');
     if (f.family === 'Options overlay') out.push('The fund sells options on its holdings, and the file lists no option position. An option the fund owes makes it worth less than its shares, which fits a file that adds up to more than the NAV. That is the likely cause; the file cannot prove it.');
     if (f.family === 'Hybrids') out.push('Hybrids pay quarterly distributions, and the file gives no coupon or date for them, so I cannot work out what has been earned since the last one. The gap stays unexplained.');
-    if (f.family === 'Futures and cash') out.push('Almost everything this fund does happens in the futures line, so its file can be checked against the NAV only through cash, which is not enough.');
+    if (f.family === 'Futures and cash') out.push('Almost everything this fund does happens in the futures line. Act four shows that its gap divides into the same amount per contract as another fund holding that contract, which is one day\u2019s move settling in cash.');
     out.push(Math.abs(f.mine) <= tol ? 'Within ' + String.fromCharCode(177) + tol + ' bp once read this way.' : 'Outside ' + String.fromCharCode(177) + tol + ' bp, by ' + abs1(f.mine) + ' bp, after everything above.');
     return out;
   }
@@ -397,7 +407,7 @@
     $('#v1').innerHTML = '<b>Each kind of fund breaks the check in its own way, and only some of the ways are written in the file.</b> ' +
       'A date that differs and a bond printed without its interest can be corrected from the files themselves, which is why ' + nw(auIn) + ' of the ' + nw(au.length) +
       ' Australian share funds land inside the band. ' +
-      'A futures contract, a loan or a sold option moves the NAV without a value in the file, so those funds cannot be checked from it alone.';
+      'A hedge, a loan or a sold option moves the NAV without a line in the file, and futures move it through cash a day behind, so those funds cannot be tied out from the file alone.';
   }
 
   /* ---------- act two: every fund ---------- */
@@ -406,13 +416,16 @@
     var bits = [];
     if (Math.abs(f.printed - f.dated) > 5) bits.push('page dated later');
     if (f.accrued_bp) bits.push('bond interest ' + abs1(f.accrued_bp) + ' bp');
-    if (f.no_value.some(function (x) { return x.kind === 'futures'; })) bits.push('futures with no value');
+    var out = Math.abs(f.mine) > state.tol;
+    if (!out) { bits.push('ties out'); return bits.join('; '); }
+    if (f.no_value.some(function (x) { return x.kind === 'futures'; })) bits.push('futures margin timing');
     if (f.family === 'International bonds') bits.push('hedges not listed');
-    if (f.family === 'International shares') bits.push('shared international gap');
+    if (f.family === 'International shares') bits.push('shared international gap, hypothesis');
     if (f.family === 'Currency hedged') bits.push('hedge not listed');
-    if (f.family === 'Options overlay') bits.push('options not listed');
-    if (f.family === 'Geared') bits.push('loan as negative cash');
+    if (f.family === 'Options overlay') bits.push('options not valued');
+    if (f.family === 'Geared' && !f.no_value.some(function (x) { return x.kind === 'futures'; })) bits.push('loan interest not listed');
     if (f.family === 'Hybrids') bits.push('no coupon data');
+    if (S.bond_worse.indexOf(f.tk) >= 0) bits.push('file seems to include interest');
     return bits.join('; ');
   }
   function renderLog() {
@@ -455,51 +468,85 @@
 
   /* ---------- act three: bond interest ---------- */
   function renderBonds() {
-    var bonds = famOf('Fixed rate bonds').concat(famOf('Floating rate bonds')).concat(famOf('International bonds')).concat(famOf('Hybrids'));
-    var best = famOf('Fixed rate bonds').filter(function (f) { return f.bond; }).sort(function (a, b) { return Math.abs(a.mine) - Math.abs(b.mine); })[0];
+    var fixed = famOf('Fixed rate bonds');
+    var best = fixed.filter(function (f) { return f.bond; }).sort(function (a, b) { return Math.abs(a.mine) - Math.abs(b.mine); })[0];
     if (best) {
       var b = best.bond;
+      var toCoupon = Math.round((dt(b.next) - dt(best.d)) / 864e5);
       $('#bondline').innerHTML = '<p>' + esc(best.name) + ' (' + esc(best.tk) + ') holds ' + esc(nameCase(b.name)) + ': face value ' + money(b.face) + ', coupon ' + b.coupon +
         ' percent a year, maturing ' + esc(dLong(b.maturity)) + '. Paid twice a year and counted back from maturity, its coupons fall on ' + esc(dLong(b.last)) + ' and ' + esc(dLong(b.next)) + '.</p>' +
-        '<p>On ' + esc(dLong(best.d)) + ', ' + b.days + ' of the ' + b.period + ' days between those coupons have passed, so the bond has earned ' + money(b.face) + ' × ' + b.coupon +
-        '% ÷ 2 × ' + b.days + '/' + b.period + ' = ' + money(b.accrued) + ' of interest. The file values the line at ' + money(b.mv) + ', its clean price, so that ' + money(b.accrued) +
-        ' is missing from the file’s sum while the fund owns it and its NAV counts it.</p>' +
-        '<p>Done for every fixed rate line in the fund, the missing interest comes to ' + abs1(best.accrued_bp) + ' bp of the fund, and the gap goes from ' + sgn(best.dated) + ' bp to ' + sgn(best.mine) + ' bp.</p>';
+        '<p>On ' + esc(dLong(best.d)) + ', ' + b.days + ' of the ' + b.period + ' days between those coupons have passed, so the bond has earned ' + money(b.face) + ' \u00d7 ' + b.coupon +
+        '% \u00f7 2 \u00d7 ' + b.days + '/' + b.period + ' = ' + money(b.accrued) + ' of interest. The file values the line at ' + money(b.mv) + ', its clean price, so that ' + money(b.accrued) +
+        ' is missing from the file\u2019s sum while the fund owns it and its NAV counts it.</p>' +
+        (toCoupon <= 7 ? '<p>This line is ' + nw(toCoupon) + ' days from its coupon, inside the seven day ex interest window, when the coming coupon may already sit in the fund\u2019s cash. ' +
+          'That is why the table below also shows the same rule with no interest for lines inside the window.</p>' : '') +
+        '<p>Done for every fixed rate line in the fund, the interest comes to ' + abs1(best.accrued_bp) + ' bp of the fund, and the gap goes from ' + sgn(best.dated) + ' bp to ' + sgn(best.mine) + ' bp.</p>';
     }
-    $('#bondtable thead').innerHTML = '<tr><th>Fund</th><th class="l">Kind</th><th>Fixed lines</th><th>Floating lines</th><th>Dated, bp</th><th>Interest added, bp</th><th>Mine, bp</th></tr>';
-    $('#bondtable tbody').innerHTML = bonds.map(function (f) {
-      return '<tr><td class="num">' + esc(f.tk) + '</td><td class="l">' + esc(f.family) + '</td><td class="num">' + f.fixed + '</td><td class="num">' + f.floating + '</td><td class="num">' + sgn(f.dated) +
-        '</td><td class="num">' + (f.accrued_bp ? '+' + f.accrued_bp.toFixed(1) : '0.0') + '</td><td class="num" style="color:' + (Math.abs(f.mine) > D.tol ? C.neg : C.mine) + '">' + sgn(f.mine) + '</td></tr>';
-    }).join('');
-    var fixed = famOf('Fixed rate bonds');
-    var near = fixed.filter(function (f) { return Math.abs(f.mine) <= 10; }).length;
-    $('#v3').innerHTML = '<b>The interest correction moves the typical fixed rate bond fund from ' + S.bond_dated_median.toFixed(0) + ' bp off to ' + S.bond_mine_median.toFixed(0) + ' bp off.</b> ' +
-      Nw(near) + ' of the ' + nw(fixed.length) + ' fixed rate funds ' + (near === 1 ? 'lands' : 'land') + ' within 10 bp with it. The rest keep 10 to 40 bp that move from day to day, which the coupon rule cannot account for and the file does not explain.';
+    $('#bondrules').innerHTML = 'Each row is a fixed rate bond fund on ' + esc(dLong(fileDate())) + '. <b>As dated</b> is the file with no interest added. <b>Base</b> adds every fixed rate line\u2019s interest to the file\u2019s date, two coupons a year, actual days over actual days. ' +
+      '<b>Settlement</b> accrues two business days further, to the market\u2019s settlement date. <b>Ex window</b> is the base rule with nothing for a line within seven days of its coupon. Floating rate lines are left as printed throughout.';
+    var cols = [['dated', 'As dated'], ['mine', 'Base'], ['mine_settle', 'Settlement'], ['mine_ex', 'Ex window']];
+    $('#bondtable thead').innerHTML = '<tr><th>Fund</th><th>Fixed lines</th><th>In ex window</th>' + cols.map(function (c) { return '<th>' + c[1] + ', bp</th>'; }).join('') + '</tr>';
+    var bv = S.bond_variants;
+    $('#bondtable tbody').innerHTML = fixed.map(function (f) {
+      return '<tr><td class="num">' + esc(f.tk) + '</td><td class="num">' + f.fixed + '</td><td class="num">' + f.in_ex + '</td>' + cols.map(function (c) {
+        return '<td class="num" style="color:' + (Math.abs(f[c[0]]) > D.tol ? C.neg : C.mine) + '">' + sgn(f[c[0]]) + '</td>';
+      }).join('') + '</tr>';
+    }).join('') + '<tr><td class="l"><b>Median gap</b></td><td></td><td></td>' + ['dated', 'base', 'settle', 'ex'].map(function (k) { return '<td class="num"><b>' + bv[k].median.toFixed(1) + '</b></td>'; }).join('') + '</tr>' +
+      '<tr><td class="l"><b>Within ' + String.fromCharCode(177) + D.tol + ' bp</b></td><td></td><td></td>' + ['dated', 'base', 'settle', 'ex'].map(function (k) { return '<td class="num"><b>' + bv[k].within + ' of ' + fixed.length + '</b></td>'; }).join('') + '</tr>';
+    var worse = S.bond_worse.map(function (t) { return F[BY_TK[t]]; }).filter(Boolean);
+    var exIn = fixed.filter(function (f) { return Math.abs(f.mine_ex) <= D.tol; }).map(function (f) { return f.tk; });
+    $('#v3').innerHTML = '<b>No one rule fits every bond file.</b> The base rule narrows the typical gap from ' + bv.dated.median.toFixed(0) + ' bp to ' + bv.base.median.toFixed(0) +
+      ' bp but brings ' + kOf(bv.base.within, fixed.length) + ' within ' + D.tol + ' bp; leaving out lines in the ex interest window brings ' + (exIn.length ? exIn.join(' and ') : 'none') +
+      ' within and pushes ' + (function () { var w = fixed.filter(function (f) { return Math.abs(f.mine_ex) > Math.abs(f.mine) + 1; }).map(function (f) { return f.tk; }); return w.length ? w.join(', ').replace(/, ([^,]*)$/, ' and $1') : 'none'; })() +
+      ' further off, so the funds appear to book coupons on different conventions. ' +
+      worse.map(function (f) { return f.tk + ' goes from ' + sgn(f.dated) + ' bp to ' + sgn(f.mine) + ' bp'; }).join(' and ') +
+      ' when interest is added, which suggests ' + (worse.length > 1 ? 'those files already carry it' : 'that file already carries it') + ', so for ' + (worse.length > 1 ? 'them' : 'it') + ' the heading above does not hold.';
   }
 
   /* ---------- act four: where it loses ---------- */
   function renderFail() {
+    var hedged = famOf('Currency hedged');
+    var hm = hedged.map(function (f) { return Math.abs(f.mine); }).sort(function (a, b) { return a - b; })[Math.floor(hedged.length / 2)];
+    $('#f-hedged').innerHTML = '<b>The currency hedged funds leave the hedge out.</b> ' + Nw(hedged.length) + ' funds hedge foreign currency back into Australian dollars with forward contracts that are not lines in the file. ' +
+      'A forward is marked against the fund\u2019s exchange rate fix and rolled, typically monthly, so its value moves the NAV every day. These funds miss by a median of ' + hm.toFixed(0) + ' bp, and the file cannot size the hedge.';
+    var pairs = S.futures_pairs || [];
+    $('#f-futures').innerHTML = '<b>The futures funds\u2019 gaps are one day\u2019s margin.</b> Futures settle gains and losses in cash every day, so an open contract carries about zero value, and a gap is the timing of that cash. ' +
+      'The test: where two funds hold the same contract, if the gap is the day\u2019s move on it, both gaps divide into the same amount per contract, whatever the size or direction of the position. ' +
+      (function () {
+        var sp = pairs.map(function (p) {
+          var a = p.funds[0].per, b = p.funds[1].per;
+          return Math.abs(a - b) / ((Math.abs(a) + Math.abs(b)) / 2) * 100;
+        }).sort(function (x, y) { return x - y; });
+        var tight = sp.filter(function (x) { return x <= 2; }).length;
+        var same = pairs.filter(function (p) { return (p.funds[0].per > 0) === (p.funds[1].per > 0); }).length;
+        return 'They agree in sign on ' + (same === pairs.length ? 'every contract' : nw(same) + ' of the ' + nw(pairs.length) + ' contracts') + ', within 2 percent on ' + nw(tight) + ' of the ' + nw(sp.length) + ' and within ' + Math.ceil(sp[sp.length - 1]) + ' percent on all of them:';
+      })();
+    $('#futtable thead').innerHTML = '<tr><th>Contract</th><th>Fund</th><th>Contracts</th><th>Gap, bp</th><th>Gap, A$</th><th>Gap per contract, A$</th></tr>';
+    $('#futtable tbody').innerHTML = pairs.map(function (p) {
+      return p.funds.map(function (x, i) {
+        return '<tr><td class="num">' + (i ? '' : esc(p.contract.replace(/ (Index|Comdty|Curncy)$/, ''))) + '</td><td class="num">' + esc(x.tk) + '</td><td class="num">' + int(x.qty) + '</td><td class="num">' + sgn(x.mine) +
+          '</td><td class="num">' + int(x.gap) + '</td><td class="num">' + int(x.per) + '</td></tr>';
+      }).join('');
+    }).join('');
     var ib = S.intl_by_date || [];
-    $('#f-intl').innerHTML = '<b>The international funds share a gap that moves.</b> ' + ib.map(function (x, i) {
-      return (i ? 'on ' : 'On ') + dLong(x.d) + ' the unhedged international share funds sat at a median of ' + sgn(x.median) + ' bp, ' + x.same_side + ' of ' + x.n + ' on the same side';
-    }).join('; ') + '. A gap shared by assets with nothing in common but their conversion into Australian dollars, and that changes sign from one day to the next, points at the exchange rate, ' +
-      'struck at a different moment for the file than for the NAV. That is the likely cause, and this page does not test it: the files carry no local prices, and the central bank\u2019s daily rates refuse automated download.';
-    var nv = F.filter(function (f) { return ['Futures and cash', 'Geared', 'Options overlay', 'International bonds', 'Currency hedged'].indexOf(f.family) >= 0; });
-    $('#f-novalue').innerHTML = '<b>Some funds move through lines without a value.</b> The currency hedged funds, the futures funds, the geared funds and the options overlay fund carry much of their daily change in hedges, futures or options the file prints without a value or does not list. ' +
-      (function () { var k = nv.filter(function (f) { return Math.abs(f.mine) > D.tol; }).length; return (k === nv.length ? 'All ' + k + ' of these funds miss' : k + ' of these ' + nv.length + ' funds miss'); })() +
-      ' by more than ' + D.tol + ' bp, and their files cannot be checked against the NAV on their own.';
+    $('#f-intl').innerHTML = '<b>The international funds share a gap, and my explanation is a hypothesis.</b> On both days I collected, most unhedged international share funds sat on the same side of zero together, ' +
+      'by different amounts on each day (table below). A gap shared by unrelated assets points at what they share, the conversion into Australian dollars: an exchange rate or overseas closing prices struck at a different time for the file than for the NAV. ' +
+      'I have not tested it. A test needs the rates and price times the file uses, which it does not print, or a run of days to set against the Australian dollar\u2019s moves. The 16 October files come from an earlier collection and appear only here.';
+    $('#intltable thead').innerHTML = '<tr><th>File date</th><th>Unhedged international funds</th><th>Median gap, bp</th><th>Range, bp</th><th>On the median\u2019s side</th></tr>';
+    $('#intltable tbody').innerHTML = ib.map(function (x) {
+      return '<tr><td class="num">' + esc(dShort(x.d)) + '</td><td class="num">' + x.n + '</td><td class="num">' + sgn(x.median) + '</td><td class="num">' + sgn(x.lo) + ' to ' + sgn(x.hi) + '</td><td class="num">' + x.same_side + ' of ' + x.n + '</td></tr>';
+    }).join('');
     var wo = S.skipped.filter(function (x) { return /weights/.test(x.why); });
     $('#f-gap').innerHTML = '<b>Some files cannot be added up at all.</b> ' + Nw(wo.length) + ' funds publish weights only, with no quantities or values (' +
       wo.map(function (x) { return x.tk; }).join(', ') + '), and ' + nw(S.skipped.length - wo.length) + ' more had no usable NAV history for the day (' +
-      S.skipped.filter(function (x) { return !/weights/.test(x.why); }).map(function (x) { return x.tk; }).join(', ') + '). They are left out of every count above.';
+      S.skipped.filter(function (x) { return !/weights/.test(x.why); }).map(function (x) { return x.tk; }).join(', ') + '). They are left out of every count above, which is why this page covers ' + S.n + ' of ' + S.publishing + ' funds.';
     $('#f-oneday').innerHTML = '<b>There is no daily history yet.</b> The issuer serves only the latest holdings file for each fund, and the Internet Archive holds the largest fund\u2019s file on fewer than twenty days in seven years, never two days running. ' +
-      'This page uses the files of ' + (S.intl_by_date || []).map(function (x) { return dLong(x.d); }).join(' and ') + ', collected on two visits, which are not consecutive trading days. ' +
-      'So units created on the day cannot be told apart from a gap in the file, and yesterday\u2019s basket cannot yet be repriced at today\u2019s values. The collector in the repository saves each day\u2019s files; run daily, it builds that history.';
+      'So units created on the day cannot be told apart from a gap in the file, and yesterday\u2019s holdings cannot yet be repriced at today\u2019s values. The collector in the repository saves each day\u2019s files; run daily, it builds that history.';
     var same = F.filter(function (f) { return f.units_as_at === f.d; }).length, later = F.filter(function (f) { return f.units_as_at && f.units_as_at > f.d; }).length;
-    $('#f-dates').innerHTML = '<b>Dates differ from fund to fund.</b> On this day ' + same + ' fund pages give units on issue as at the file’s own date and ' + later +
-      ' give the next trading day. Where they differ, units created in between show up as a gap. A run of consecutive days would show which convention each fund follows.';
-    $('#v4').innerHTML = '<b>Two days of files prove what dates and bond interest explain, and no more.</b> The international gap and the funds with unvalued lines need either a daily history of files or data the files do not carry. ' +
-      'The collector is the cheaper of those two to get.';
+    $('#f-dates').innerHTML = '<b>Dates differ from fund to fund.</b> On this day ' + same + ' fund pages give units on issue as at the file\u2019s own date and ' + later +
+      ' give the next trading day. Two conventions would produce that: a NAV struck after the close and labelled with that day, with units updated a day later for creations booked on it, or a page that shows the latest units whatever the file\u2019s date. Consecutive days of files would tell them apart.';
+    $('#v4').innerHTML = '<b>These files prove what dates, bond interest and futures margin explain, and no more.</b> The hedged funds need the forwards, the bond funds need each line\u2019s coupon conventions, and the international gap needs a run of days or the file\u2019s own rates. ' +
+      'The collector is the cheapest of those to get.';
   }
 
   /* ---------- coda ---------- */
@@ -522,8 +569,8 @@
   function choices() {
     var au = famOf('Australian shares').map(function (f) { return Math.abs(f.dated); }).sort(function (a, b) { return a - b; });
     var rows = [
-      ['Tolerance', D.tol + ' bp', 'The Australian share funds, dated properly, land within a median of ' + au[Math.floor(au.length / 2)].toFixed(1) + ' bp; fees owed and income due sit outside the file and account for a few basis points. Change it with the buttons under the first chart.'],
-      ['Coupon schedule', 'two a year, counted back from maturity', 'The usual schedule for Australian dollar bonds. A bond on another schedule leaves a residual, which the bond table shows.'],
+      ['Tolerance', D.tol + ' bp', 'Fees owed and income due, which a holdings file leaves out, usually come to a few basis points. It was set from that, and the Australian share funds then land within a median of ' + au[Math.floor(au.length / 2)].toFixed(1) + ' bp, so it is not independent of the result. The counts at 2, 10 and 25 bp are one click away under the first chart.'],
+      ['Coupon schedule', 'two a year, counted back from maturity, actual over actual', 'The usual convention for Australian dollar bonds. Act three shows the same funds under a settlement date and an ex interest variant.'],
       ['Floating rate lines', 'left as printed', 'Their printed values already sit close to the NAV, so they appear to include the interest earned.'],
       ['Fund kind', 'from the file’s lines and the fund’s name', 'Bond layout or share layout, futures without shares, more than half the value in other BetaShares funds, and the words geared, yield maximiser or covered call.'],
       ['Floor', 'median one day NAV move, ' + S.floor_median.toFixed(0) + ' bp', 'What a check pinned one trading day early misses on a typical fund.']
@@ -531,7 +578,7 @@
     $('#choicebody').innerHTML = rows.map(function (r) {
       return '<tr><td class="l" style="white-space:nowrap">' + esc(r[0]) + '</td><td class="num" style="white-space:normal;min-width:110px">' + esc(r[1]) + '</td><td class="l" style="color:#5b6470;min-width:220px">' + esc(r[2]) + '</td></tr>';
     }).join('');
-    $('#srcdates').textContent = 'Holdings files dated ' + S.dates.map(dLong).join(' and ') + ', for ' + S.n + ' funds' +
+    $('#srcdates').textContent = 'Collected on ' + (S.collected || []).map(dLong).join(' and ') + ' (UTC). Holdings files dated ' + S.dates.map(dLong).join(' and ') + ', for ' + S.n + ' of ' + S.publishing + ' funds' +
       (S.skipped.length ? '; ' + S.skipped.length + ' more funds have a file but no units on their page and are left out (' + S.skipped.map(function (x) { return x.tk; }).join(', ') + ')' : '') + '.';
   }
 
@@ -540,14 +587,14 @@
     var root = $('#tour'), hl = $('.tour-hl', root), card = $('.tour-card', root), idx = 0;
     var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     var STEPS = [
-      { sel: 'header h1', k: 'Welcome \u00b7 1 of 8', html: 'This page asks one question of every BetaShares fund: <b>does its holdings file add up to its NAV?</b> Every number comes from one day of the issuer\u2019s public files.' },
+      { sel: 'header h1', k: 'Welcome \u00b7 1 of 8', html: 'This page asks one question of each BetaShares fund that publishes a holdings report: <b>does the report add up to its NAV?</b> It is an end of day reconciliation on public files, one input to PCF work, not the PCF check.' },
       { sel: '#bluecard', k: 'The answer \u00b7 2 of 8', html: 'The whole result in one chart. Each strip is a way of checking and each mark is one fund, grouped by kind. <b>Click any fund</b> to read what its file shows, or <b>change the tolerance</b> just under the chart.' },
       { sel: '#domain', k: 'The shape of it \u00b7 3 of 8', html: 'What happens to one fund\u2019s file: its sum, the NAV for its own date, each line read on its own basis, and only then the published value.' },
-      { sel: '#quotes', k: 'Their words \u00b7 4 of 8', html: 'The advertisement\u2019s own description of the job. The page does the second line, on public files.' },
+      { sel: '#quotes', k: 'Their words \u00b7 4 of 8', html: 'The advertisement\u2019s own description of the job. This page touches part of the second line: it reconciles the end of day holdings report to the NAV.' },
       { sel: '#kindcard', k: 'One of each \u00b7 5 of 8', html: 'One real fund of each kind. <b>Click the buttons</b> above this box to move between them.' },
       { sel: '#logcard', k: 'Every fund \u00b7 6 of 8', html: 'Every fund in one list. <b>Click a kind</b> above the table to filter, or <b>click a row</b> to open the fund.' },
       { sel: '#bondcard', k: 'Bond interest \u00b7 7 of 8', html: 'One bond line worked through by hand: the interest the file leaves out, from the file\u2019s own columns.' },
-      { sel: '#failpane', k: 'Where it loses \u00b7 8 of 8', html: 'What one day of files cannot settle, stated before you find it.' }
+      { sel: '#futtable', k: 'Where it loses \u00b7 8 of 8', html: 'Act four states what these files cannot settle. This table is its one test: funds holding the same futures contract show the same gap per contract, one day\u2019s margin not yet in the file\u2019s cash. The international gap below it stays a hypothesis.' }
     ];
     function place() {
       var st = STEPS[idx], elm = document.querySelector(st.sel);

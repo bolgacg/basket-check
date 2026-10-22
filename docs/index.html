@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <title>Does each fund's holdings file add up to its NAV?</title>
-<meta name="description" content="One day of public holdings files from every BetaShares fund, each summed and checked against the NAV the issuer published: which files add up, which do not, and why. Bolgac Gulen, 2026.">
+<meta name="description" content="An end of day reconciliation of BetaShares funds' public holdings reports against their published NAV: which files tie out, which do not, and why. Bolgac Gulen, 2026.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -117,6 +117,10 @@ tr.on td{background:#eef2f7}
 ol.primer{padding-left:20px;font-size:14.5px;color:var(--soft);line-height:1.7}
 ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
 .disclose{font-size:13px;color:var(--soft);margin-top:16px}
+details.fold{margin-top:16px;border:1px solid var(--rule);border-radius:6px;background:var(--card);padding:14px 18px}
+details.fold summary{cursor:pointer;font-weight:500;font-size:14.5px;color:var(--accent)}
+details.fold[open] summary{margin-bottom:6px}
+details.fold .card{border:none;padding:8px 0 0;margin-top:8px}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
 </style>
@@ -125,7 +129,7 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
 <div id="tour"><div class="tour-hl"></div><div class="tour-card"></div></div>
 
 <header><div class="wrap">
-  <div class="eyebrow">A one day check on public ETF files &middot; October 2026</div>
+  <div class="eyebrow">An end of day reconciliation of public ETF files &middot; October 2026</div>
   <h1>Does each fund's holdings file add up to its NAV?</h1>
   <p class="dek" id="dek"></p>
   <div class="byline">
@@ -160,10 +164,15 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
 </div></section>
 
 <section id="primer"><div class="wrap">
-  <div class="sec-label">Before going further</div>
-  <h2>Five things to know</h2>
-  <p class="lede">This page reads one day of fund files, so here is what is in them and what is being
-  checked. Nothing after this assumes you have seen an ETF file before.</p>
+  <div class="sec-label">The method in one picture</div>
+  <h2>What happens to one fund's file</h2>
+  <div class="card" id="domain">
+        <p class="small" id="domainhint">The whole check in one picture.</p>
+    <div class="viz" id="domainviz"></div>
+  </div>
+
+  <details class="fold">
+    <summary>If you are new to ETF files: five things to know, and the terms used on this page</summary>
   <div class="card">
     <ol class="primer">
       <li>An <b>ETF</b> is a fund whose units trade on the stock exchange. Once a day, after the close,
@@ -184,12 +193,6 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
         without the interest it has earned, and a holding that <b>moves the NAV</b> without carrying a
         value in the file, such as a futures contract.</li>
     </ol>
-  </div>
-
-  <div class="card" id="domain">
-    <div class="card-title">What happens to one fund's file</div>
-    <p class="small" id="domainhint">The whole check in one picture.</p>
-    <div class="viz" id="domainviz"></div>
   </div>
 
   <div class="card">
@@ -218,13 +221,14 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
       <div><b>options overlay</b> A share fund that also sells options on its holdings for income.</div>
     </div>
   </div>
+  </details>
 </div></section>
 
 <section id="words"><div class="wrap">
   <div class="sec-label">Their words</div>
-  <h2>The job this page does in miniature</h2>
+  <h2>Where this sits in the advertised job</h2>
   <p class="lede">The advertisement for the ETF Pricing Specialist in Sydney describes the work in three
-  lines. This page is built around the second one.</p>
+  lines. This page touches part of the second.</p>
   <div id="quotes">
     <div class="quote">Analysis and processing of ETF PCF and related data pipelines.</div>
     <div class="quote">Day to day validations of ETF PCFs and related data products, handling edge
@@ -233,10 +237,11 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
       data quality and process automation.
       <small>Optiver, ETF Pricing Specialist, Sydney, read 19 October 2026</small></div>
   </div>
-  <p class="small">The baskets a desk receives each morning are not on this page. Each fund's full
-  holdings file is public, and everything below runs the first check a desk would run on a PCF, that
-  it adds up to the fund, on that file instead. Nothing on this page describes Optiver's systems or
-  data.</p>
+  <p class="small">What this page does is reconcile each fund's end of day holdings report to its NAV,
+  on public data. That is one input to PCF work, not the PCF check. The PCF check starts from the
+  creation basket for the next day: the stock list after the next day's corporate actions, the cash
+  component and the creation unit size. Issuers do not publish those, and this page does not attempt
+  them. Nothing on this page describes Optiver's systems or data.</p>
 </div></section>
 
 <section id="act1"><div class="wrap">
@@ -274,16 +279,15 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
 
 <section id="act3"><div class="wrap">
   <div class="sec-label">Act three</div>
-  <h2 id="act3-h">Bond files leave out the interest each bond has earned</h2>
+  <h2 id="act3-h">Most bond files leave out earned interest, and no one rule fits them all</h2>
   <p class="why"><b>Why this matters</b> Bond funds are where the file and the NAV differ most, and the
   difference can be calculated from the file itself, line by line, before anyone looks at the NAV.</p>
   <div class="card" id="bondcard">
     <div class="card-title">One bond line, worked through</div>
     <div class="daytext" id="bondline"></div>
   </div>
-  <h3>Every bond fund, before and after</h3>
-  <p class="small">Each row is a bond fund on the same day: the gap with the file as printed, and the
-  gap once every fixed rate line carries its earned interest. Floating rate lines are left as printed.</p>
+  <h3>Every fixed rate bond fund, under three rules</h3>
+  <p class="small" id="bondrules"></p>
   <div class="tscroll"><table id="bondtable"><thead></thead><tbody></tbody></table></div>
   <p class="verdict" id="v3"></p>
   <p class="handover">Interest is a correction the file allows. Act four is about the gaps it does not.</p>
@@ -295,8 +299,11 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
   <p class="why"><b>Why this matters</b> A check is only worth running if its blind spots are known.
   These are the ones these files expose, stated before anyone else finds them.</p>
   <div class="limits" id="failpane">
+    <p id="f-hedged"></p>
+    <p id="f-futures"></p>
+    <div class="tscroll" style="margin:4px 0 14px"><table id="futtable"><thead></thead><tbody></tbody></table></div>
     <p id="f-intl"></p>
-    <p id="f-novalue"></p>
+    <div class="tscroll" style="margin:4px 0 14px"><table id="intltable"><thead></thead><tbody></tbody></table></div>
     <p id="f-gap"></p>
     <p id="f-oneday"></p>
     <p id="f-dates"></p>
@@ -317,6 +324,8 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
   </div>
 
   <h3>How the check works</h3>
+  <p class="small">The files are BetaShares' end of day holdings reports. Each is summed and compared with
+  the fund's NAV times its units on issue; nothing here touches a creation basket.</p>
   <ol class="primer">
     <li>Collect, for every fund listed on the issuer's fund pages, its latest holdings file, its NAV
       history and the units on issue and net assets its page shows.</li>
@@ -341,18 +350,18 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
   <div class="limits">
     <p>The issuer's own values are the only prices used. If a value in the file were wrong in the same
       way as the NAV, the check would pass.</p>
-    <p>The coupon rule assumes every fixed rate bond pays twice a year on its maturity day and month.
-      After it, the bond funds still differ from their NAV by 10 to 40 bp, by amounts that change from
-      day to day; the file does not say why.</p>
+    <p>The coupon rule assumes every fixed rate bond pays twice a year on its maturity day and month,
+      with actual days over actual days. Lines that pay quarterly or once a year, or count 30/360, would
+      shift the bond figures, and the files do not say which do.</p>
     <p>Fund families are assigned from what each file holds and from the fund's name. The likely
       causes in the checklist are labelled as likely where the files cannot prove them.</p>
   </div>
 
   <h3>Sources and terms</h3>
   <ul class="small" style="padding-left:18px;line-height:1.8">
-    <li>Holdings files, NAV histories, units on issue and net assets of every BetaShares fund that
+    <li>Holdings files, NAV histories, units on issue and net assets of the BetaShares funds that
       publishes a holdings file, from <span class="code">www.betashares.com.au/fund/</span> and the
-      download links on each fund page, read 19 and 20 October 2026. <span id="srcdates"></span></li>
+      download links on each fund page. <span id="srcdates"></span></li>
     <li>Terms: Betashares' website terms say "You may use the information for your own personal
       reference only" and "Except as permitted under the Copyright Act 1968 (Cth) or other applicable
       laws, this website or any portion of this website may not otherwise be reproduced, adapted,
@@ -362,7 +371,10 @@ ol.primer li{margin-bottom:6px}ol.primer b{color:var(--ink)}
       acknowledged. So the repository holds no Betashares file, the collector downloads the files to the
       machine that runs it, and this page shows my calculations with only short factual excerpts, such as
       a code, a date, a coupon or a quantity. Sources are cited in plain text.</li>
-    <li>This page is not affiliated with or endorsed by Betashares, ASX or Optiver.</li>
+    <li>The collector fetches each file once per run, one request at a time with a pause between, and is
+      meant to run once a day.</li>
+    <li>This page is not affiliated with or endorsed by Betashares, ASX or Optiver. If Betashares asks, I
+      will take it down.</li>
     <li>Code, including the collector that grows the history day by day:
       <a href="https://github.com/bolgacg/basket-check">github.com/bolgacg/basket-check</a>.</li>
   </ul>
